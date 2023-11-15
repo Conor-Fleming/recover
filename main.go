@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"runtime/debug"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 
 	recoveryMux := recoveryHandler(mux)
 
-	log.Fatal(http.ListenAndServe(":3000", recoveryMux))
+	log.Fatal(http.ListenAndServe(":8080", recoveryMux))
 }
 
 func recoveryHandler(next http.Handler) http.Handler {
@@ -22,6 +23,7 @@ func recoveryHandler(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("Recovered from panic %s", err)
+				debug.PrintStack()
 				http.Error(w, "Something went wrong", http.StatusInternalServerError)
 			}
 		}()
