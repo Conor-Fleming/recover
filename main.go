@@ -11,7 +11,23 @@ func main() {
 	mux.HandleFunc("/panic/", panicDemo)
 	mux.HandleFunc("/panic-after/", panicAfterDemo)
 	mux.HandleFunc("/", hello)
-	log.Fatal(http.ListenAndServe(":3000", mux))
+
+	recoveryMux := recoveryHandler(mux)
+
+	log.Fatal(http.ListenAndServe(":3000", recoveryMux))
+}
+
+func recoveryHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("Recovered from panic %s", err)
+				http.Error(w, "Something went wrong", http.StatusInternalServerError)
+			}
+		}()
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func panicDemo(w http.ResponseWriter, r *http.Request) {
